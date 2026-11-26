@@ -1,0 +1,47 @@
+# ---------------------------------------------------------------------------
+# 可用区隔离实践 —— 变量示例
+#
+# 复制本文件为 terraform.tfvars 后按需修改。未列出的变量使用 variables.tf 中的
+# 默认值。本实践默认即为「内网形态」：内网域名 + 内网独享型负载均衡，无需备案。
+#
+# 默认参数即可完成本实践的部署；确认预览结果后再执行 apply。
+# 若打开 enable_nat_gateway，会额外创建 NAT 网关与弹性公网 IP。
+# ---------------------------------------------------------------------------
+
+# 区域。先确认目标区域有弹性规格 L4_flavor.elb.pro.max（用 huaweicloud_elb_flavors 核验）。
+region = "cn-north-4"
+
+name_prefix = "az-isolation"
+environment = "dev"   # 取 prod 会为负载均衡器开启删除保护
+
+# 后端服务器
+ecs_flavor_id     = "s6.small.1"
+image_name_regex  = "^Ubuntu 22.04 server 64bit$"
+app_port          = 8080
+health_check_path = "/health"
+# key_pair_name   = "your-key-pair"   # 留空则不配置登录方式；填了才会放行 22 端口
+
+# 负载均衡（四层弹性规格）
+elb_l4_flavor_name = "L4_flavor.elb.pro.max"
+
+# 内网域名
+private_zone_name = "az-isolation.internal."
+app_subdomain     = "app"
+record_ttl        = 5
+
+# 撤离开关与控制面
+# 角色按授权类型分放：AX（全局服务级）进 controller_agency_roles，
+# XA（项目级）进 controller_agency_project_roles。放错位置不报错但不生效。
+controller_agency_roles         = ["OBS Administrator"]
+controller_agency_project_roles = ["DNS Administrator"]
+controller_schedule     = "1m"
+controller_fail_open    = true
+# enable_switch_bucket_versioning = false  # 默认关闭，避免销毁时版本化桶残留
+
+# 可选：启用 HTTPS 监听器（需同时提供证书 ID 与七层规格）
+# enable_https_listener = false
+# https_certificate_id  = "<CERT_ID>"
+# elb_l7_flavor_name    = "L7_flavor.elb.pro.max"
+
+# 可选：后端出网（默认关闭，本实践不需要）
+# enable_nat_gateway = false
